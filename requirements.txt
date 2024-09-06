@@ -1,0 +1,5 @@
+crc16==0.1.1
+darkdetect==0.8.0
+pyserial==3.5
+pywinstyles==1.8
+sv-ttk==2.6.0
