@@ -249,7 +249,6 @@ def fail(message):
     Print error message and exit with error
     """
     print("Error: {}.".format(message))
-    sys.exit(1)
 
 
 def unit_name(unit):
@@ -1198,7 +1197,6 @@ def main():
         parser.add_argument('-t', '--temperature', type=str, dest="temperature", help="Send temperature report (for testing)")
 
     args, unknown = parser.parse_known_args()
-    print(args)
 
     try:
         handle_commands(args)
