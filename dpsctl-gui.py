@@ -27,17 +27,21 @@ This script is a crude front-end for OpenDPS dpsctl.
 It uses stdout redirect to simplify the implementation to the expense
 of a more complex threading management.
 
+TODO:
+    - Maybe implement Funcgen
 """
 
 # Dpsctl related imports
 import copy
 import dpsctl
+import argparse
 from argparse import Namespace
 from time import sleep
 from typing import Final
 
 # Gui Stuff
 from tkinter import *
+from tkinter import messagebox 
 from tkinter.ttk import *
 from tkextrafont import Font
 
@@ -59,10 +63,7 @@ try:
 except ImportError: 
     pass
 
-
-###################################
 # opendps commands
-###################################
 # Get the args structure dpsctl expect from the command line.
 DPSCTL_NAMESPACE: Final = Namespace(device='', baudrate=9600, brightness=None, scan=False, function=None, list_functions=False, 
                              parameter=None, list_parameters=False, calibrate=False, calibration_set=None, calibration_report=False, 
@@ -71,51 +72,34 @@ DPSCTL_NAMESPACE: Final = Namespace(device='', baudrate=9600, brightness=None, s
 
 # Pre-Defined Commands
 ping_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-ping_cmd.device = '192.168.1.251'
 ping_cmd.ping = True
 
 status_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-status_cmd.device = '192.168.1.251'
 status_cmd.query = True
 
 set_pwr_on_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_pwr_on_cmd.device = '192.168.1.251'
 set_pwr_on_cmd.enable = 'on'
 
 set_pwr_off_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_pwr_off_cmd.device = '192.168.1.251'
 set_pwr_off_cmd.enable = 'off'
 
 set_cv_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_cv_cmd.device = '192.168.1.251'
 set_cv_cmd.function = 'cv'
 
 set_cl_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_cl_cmd.device = '192.168.1.251'
 set_cl_cmd.function = 'cl'
 
 set_cc_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_cc_cmd.device = '192.168.1.251'
 set_cc_cmd.function = 'cc'
 
 set_funcgen_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
-set_funcgen_cmd.device = '192.168.1.251'
 set_funcgen_cmd.function = 'funcgen'
 
+set_voltage_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
+set_voltage_cmd.parameter = ["voltage="]
 
-# Execute a command and return value to the caller
-# We need a lock on this command since the gui thread
-# and status update thread can try to get the same stdout 
-cmd_lock = threading.Lock()
-
-def send_command(command):
-    with io.StringIO() as buf, redirect_stdout(buf):
-        # Fetch device status
-        dpsctl.handle_commands(command)
-        output = buf.getvalue()
-        # Make sure we reset the buffer pointer for the next read to overwrite the previous read
-        buf.seek(0)
-    return output
+set_current_cmd = copy.deepcopy(DPSCTL_NAMESPACE)
+set_current_cmd.parameter = ["current="]
 
 ###################################
 # Gui
@@ -127,11 +111,38 @@ root.title("OpenDPS")
 root.geometry("250x200")
 root.resizable(False, False)
 
+## Global variables.
+# Target device
+target_device = ""
+
 # Running state
 is_running = False
 
+# Currently selected label command
+active_set_command = None
+
 # Mode options
 selected_mode = StringVar()
+
+# We need a lock on all commands since the gui thread
+# and status update thread can try to get the same stdout 
+cmd_lock = threading.Lock()
+
+# Generic Error Messagebox
+def show_msgbox_error(title, message):
+    messagebox.showerror(title, message) 
+
+# Send a command and read stdout return
+def send_command(command):
+    global target_device
+    with io.StringIO() as buf, redirect_stdout(buf):
+        command.device = target_device
+        # Fetch device status
+        dpsctl.handle_commands(command)
+        output = buf.getvalue()
+        # Make sure we reset the buffer pointer for the next read to overwrite the previous read
+        buf.seek(0)
+    return output
 
 # read the optionbox selected and change mode.
 def change_mode():
@@ -162,6 +173,64 @@ def toggle_running():
         with cmd_lock:
             send_command(set_pwr_on_cmd)
             is_running = True
+
+# Show the input textbox and set the correct target command
+def show_input_frame(input_frame, target_cmd):
+    global active_set_command
+    active_set_command = target_cmd
+    input_frame.grid()
+
+# Clear the input box and de-grid the entry frame
+def clear_input_hide(input_frame, entry):
+    entry.delete(0,END)
+    input_frame.grid_remove()
+
+# Check which field we're editing and change the value accordingly
+def set_target_value(calling_frame, entry):
+    try:
+        # Test if we have an int in this entry box.
+        val = entry.get()
+        intval = int(val)
+
+        # Copy our command template
+        cmd = copy.deepcopy(active_set_command)
+        cmd.parameter[0] += str(intval)
+
+        # Send and close the frame
+        with cmd_lock:
+            send_command(cmd)
+            clear_input_hide(calling_frame, entry)
+
+    except ValueError as _:
+        messagebox.showerror("Invalid", "Please enter the value in mV or mA (3300)")
+       
+# Extract values from dpsctl stdout 
+def extract_status_values(status_text):
+    # Remove the ending \n
+    all_lines = status_text.rstrip('\n')
+
+    # Extract necessary Text from Device Status
+    all_lines = all_lines.replace(' ', '').split('\n')
+
+    # All lines in all modes are in the format "Key:Value"
+    status_vals = dict()  
+    for line in all_lines:
+        split = line.split(':')
+        if len(split) >= 2: # Bug with 'cc' mode.
+            status_vals[split[0]] = split[1]
+
+    # Quick hack to add psu_output and clean-up current mode.
+    func_str = status_vals['Func']
+    if 'on' in func_str:
+        status_vals['psu_output'] = True
+    else:
+        status_vals['psu_output'] = False
+
+    # clean up current function
+    status_vals['Func'] = func_str[:func_str.find('(')]
+    
+    return status_vals
+
 
 # Create a frame to contain our status information
 # This frame sets the size and don't use slaves sizes (grid_propagate)
@@ -237,9 +306,6 @@ voltage_label.grid(row=0, column=0, columnspan=2, padx=5, sticky='ne')
 current_label = Label(status_frame, text="0.000A", font=vi_font, style='statuslbl.TLabel')
 current_label.grid(row=1, column=0, columnspan=2, padx=5, sticky='ne')
 
-current_target_label = Label(status_frame, text="0.000A", font=vi_font, style='statuslbl.TLabel')
-current_target_label.grid(row=1, column=0, columnspan=2, padx=5, sticky='ne')
-
 mode_label =  Label(status_frame, text="CV", font=mode_font, style='statuslbl.TLabel')
 mode_label.grid(row=2, column=0, padx=5, sticky='sw')
 
@@ -248,7 +314,7 @@ vin_label.grid(row=2, column=1, padx=6, sticky='se')
 
 err_label =  Label(status_frame, text="", font=vin_font, style='status_err_lbl.TLabel')
 err_label.grid(row=1, column=0, columnspan=2)
-err_label.grid_remove() # This just saves where it goes
+err_label.grid_remove() # This saves where it goes
 
 ## Toggle Button
 pwr_on_style = Style()
@@ -257,36 +323,29 @@ pwr_off_style = Style()
 pwr_off_style.configure("pwroff.TButton", foreground='red')
 
 toggle_button = Button(root, text="Power ON", command=toggle_running)
-toggle_button.grid(row=1, column=0, columnspan=2, sticky='s')
+toggle_button.grid(row=1, column=0, columnspan=2, padx=3, sticky='s')
 
+## Input frame for setting changes.
+input_frame = Frame(status_frame, width=160, height=30)
+input_frame.grid_propagate(False)
+input_frame.grid(row=2, column=0, columnspan=2)
+input_frame.columnconfigure(0, weight=1)
+input_frame.grid_remove() # This saves where it goes
 
-def extract_status_values(status_text):
-    # Remove the ending \n
-    all_lines = status_text.rstrip('\n')
+value_entry = Entry(input_frame)
+value_entry.grid(row=0, column=0, sticky='e')
 
-    # Extract necessary Text from Device Status
-    all_lines = all_lines.replace(' ', '').split('\n')
+set_button = Button(input_frame, text="Set", width=5, command=lambda: set_target_value(input_frame, value_entry))
+set_button.grid(row=0, column=1, sticky='e')
 
-    # All lines in all modes are in the format "Key:Value"
-    status_vals = dict()  
-    for line in all_lines:
-        split = line.split(':')
-        if len(split) >= 2: # Bug with 'cc' mode.
-            status_vals[split[0]] = split[1]
+cancel_button = Button(input_frame, text="Close", width=5, command=lambda: clear_input_hide(input_frame, value_entry))
+cancel_button.grid(row=0, column=2, sticky='e')
 
-    # Quick hack to add psu_output and clean-up current mode.
-    func_str = status_vals['Func']
-    if 'on' in func_str:
-        status_vals['psu_output'] = True
-    else:
-        status_vals['psu_output'] = False
+# Bind click action to voltage and status labels
+voltage_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_voltage_cmd))
+current_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_current_cmd))
 
-    # clean up current function
-    status_vals['Func'] = func_str[:func_str.find('(')]
-    
-    return status_vals
-
-
+# Gui update mainloop.
 def update_status():
     global selected_mode, is_running
     while True:
@@ -327,7 +386,6 @@ def update_status():
                 selected_mode.set('cc')
                 toggle_button.config(state='disabled')
 
-
             # Target voltage in mV (3000 = 3v)
             target_voltage = status_values['voltage']
             fmt_target_voltage = '{0:.2f}V'.format(int(target_voltage)/1000)
@@ -360,7 +418,8 @@ def update_status():
 
                 # Mode
                 if status_values['Func'] == 'cl':
-                    mode_label.config(text="CL")
+                    if mode_label.cget('text') != 'CL':
+                        mode_label.config(text="CL")
                 else:
                     mode_label.config(text=status_values['Func'].upper())
 
@@ -376,11 +435,11 @@ def update_status():
 
                 # Mode (Show CVCL when running in CL)
                 if status_values['Func'] == 'cl':
+                    current_label.config(text=output_current, style="status_active_lbl.TLabel")
                     mode_label.config(text="CVCL")
-                    current_label.config(text=output_current, style="status_active_lbl.TLabel")
                 else:
-                    mode_label.config(text=status_values['Func'].upper())
                     current_label.config(text=output_current, style="status_active_lbl.TLabel")
+                    mode_label.config(text=status_values['Func'].upper())
 
                 # Enable Button
                 toggle_button.config(text="Power OFF")
@@ -388,9 +447,27 @@ def update_status():
         # Give some breath to the controller
         sleep(0.4)
 
-# Start our status update loop
-thread = threading.Thread(target=update_status, daemon=True)
-thread.start()
 
-# Show the gui
-root.mainloop()
+def main():
+    global target_device
+
+    parser = argparse.ArgumentParser(description="Process device argument")
+    parser.add_argument('-d', '--device', required=True, help="Specify the device")
+    try:
+        args = parser.parse_args()
+        target_device = args.device.replace(' ','')
+        print(f"Device selected: {args.device}")
+    except argparse.ArgumentError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    # Start our status update loop
+    thread = threading.Thread(target=update_status, daemon=True)
+    thread.start()
+
+    # Show the gui
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
