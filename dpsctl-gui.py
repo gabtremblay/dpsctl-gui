@@ -370,7 +370,7 @@ def update_status():
             vin_label.config(text="")
             mode_label.config(text="")
             err_label.grid()
-            err_label.config(text = t_stamp + " Error Communicating")
+            err_label.config(text = t_stamp + " Comm Error")    
         else:
             # Clear Error if present
             err_label.grid_remove()
