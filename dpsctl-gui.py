@@ -29,6 +29,7 @@ of a more complex threading management.
 
 TODO:
     - Maybe implement Funcgen
+    - Hijack dpsctl sys.exit on communication error so we can use a vanilla dpsctl.py
 """
 
 # Dpsctl related imports
