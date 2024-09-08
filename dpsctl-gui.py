@@ -175,10 +175,11 @@ def toggle_running():
             is_running = True
 
 # Show the input textbox and set the correct target command
-def show_input_frame(input_frame, target_cmd):
+def show_input_frame(input_frame, target_cmd, entry):
     global active_set_command
     active_set_command = target_cmd
     input_frame.grid()
+    entry.focus()
 
 # Clear the input box and de-grid the entry frame
 def clear_input_hide(input_frame, entry):
@@ -342,8 +343,11 @@ cancel_button = Button(input_frame, text="Close", width=5, command=lambda: clear
 cancel_button.grid(row=0, column=2, sticky='e')
 
 # Bind click action to voltage and status labels
-voltage_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_voltage_cmd))
-current_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_current_cmd))
+voltage_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_voltage_cmd, value_entry))
+current_label.bind("<Button-1>", lambda e: show_input_frame(input_frame, set_current_cmd, value_entry))
+
+# Bind enter action to Value entry
+value_entry.bind('<Return>', lambda e: set_target_value(input_frame, value_entry))
 
 # Gui update mainloop.
 def update_status():
