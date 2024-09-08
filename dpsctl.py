@@ -249,6 +249,7 @@ def fail(message):
     Print error message and exit with error
     """
     print("Error: {}.".format(message))
+    sys.exit(1)
 
 
 def unit_name(unit):

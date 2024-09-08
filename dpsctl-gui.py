@@ -29,7 +29,6 @@ of a more complex threading management.
 
 TODO:
     - Maybe implement Funcgen
-    - Hijack dpsctl sys.exit on communication error so we can use a vanilla dpsctl.py
 """
 
 # Dpsctl related imports
@@ -137,12 +136,17 @@ def show_msgbox_error(title, message):
 def send_command(command):
     global target_device
     with io.StringIO() as buf, redirect_stdout(buf):
-        command.device = target_device
-        # Fetch device status
-        dpsctl.handle_commands(command)
-        output = buf.getvalue()
-        # Make sure we reset the buffer pointer for the next read to overwrite the previous read
-        buf.seek(0)
+        # dpsctl will call system.exit on error. We want to avoid this.
+        try:
+            command.device = target_device
+            dpsctl.handle_commands(command)
+        except SystemExit:
+            print("ignoring SystemExit")
+        finally:
+            output = buf.getvalue()
+            # Make sure we reset the buffer pointer for the next read to overwrite the previous read
+            buf.seek(0)
+
     return output
 
 # read the optionbox selected and change mode.
