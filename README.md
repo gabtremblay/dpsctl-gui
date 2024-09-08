@@ -3,6 +3,8 @@
 
 `dpsctl-gui.py` is a crude frontend for OpenDPS dpsctl
 
+![dpsctl-gui in action](https://github.com/gabtremblay/dpsctl-gui/blob/main/assets/sc.png?raw=true)
+
 ## Requirements
 
 The tool runs inside a Python virtual environment and requires the installation of certain Python dependencies listed in `requirements.txt`.
