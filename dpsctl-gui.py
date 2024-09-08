@@ -28,6 +28,7 @@ It uses stdout redirect to simplify the implementation to the expense
 of a more complex threading management.
 
 TODO:
+    - Enable Lock/Unlock
     - Maybe implement Funcgen
 """
 
