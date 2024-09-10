@@ -45,9 +45,40 @@ Activate the virtual environment:
 
 Once the virtual environment is activated, install the necessary dependencies using the following command:
 
+- On Windows:
 ```bash
 pip install -r requirements.txt
 ```
+
+- On Linux/macOS:
+```bash
+pip install scikit-build
+pip install -r requirements.txt
+````
+
+### 4. Fix txextrafont
+
+A bug in tkextrafont makes it impossible to read Google open font under linux. You need to find this code block 
+
+```bash
+vi lib/_your_python_version/site-packages/tkextrafont/fontnameinfo.tcl
+````
+
+Go to line 209 and change the block
+
+```tcl
+if { $::tcl_platform(platform) == "windows" } {
+		set baseTriplet [binary format "SSS" 3 1 0x0409]	 
+	} else {
+		set baseTriplet [binary format "SSS" 1 0 0]	 
+	}
+````
+
+For
+
+```tcl
+	set baseTriplet [binary format "SSS" 3 1 0x0409]	
+````
 
 ## Usage
 
