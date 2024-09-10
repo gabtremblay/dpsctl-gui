@@ -106,7 +106,7 @@ set_current_cmd.parameter = ["current="]
 # Gui
 ###################################
 root = Tk()
-icon = PhotoImage(file="assets\\app.png")
+icon = PhotoImage(file="assets/app.png")
 root.iconphoto(True, icon)
 root.title("OpenDPS")
 root.geometry("250x200")
@@ -268,7 +268,7 @@ stopped_style = Style()
 stopped_style.configure("stopped.TLabel", foreground="red")
 
 ## Fonts
-vi_font = Font(file="assets\\MartianMono.ttf", family='Martian', size=32, weight='bold')
+vi_font = Font(file="assets/MartianMono.ttf", family='Martian', size=32, weight='bold')
 vin_font = Font(family='Martian', size=10, weight='bold')
 mode_font = Font(family='Martian', size=14, weight='bold')
 
