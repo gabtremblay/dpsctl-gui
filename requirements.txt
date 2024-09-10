@@ -12,7 +12,6 @@ pillow==10.4.0
 pyparsing==3.1.4
 pyserial==3.5
 python-dateutil==2.9.0.post0
-pywinstyles==1.8
 scikit-build==0.18.1
 six==1.16.0
 sv-ttk==2.6.0
