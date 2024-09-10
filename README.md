@@ -56,7 +56,7 @@ pip install scikit-build
 pip install -r requirements.txt
 ````
 
-### 4. Fix txextrafont
+### 4. !LINUX ONLY! Fix txextrafont
 
 A bug in tkextrafont makes it impossible to read Google open font under linux. You need to find this code block 
 
