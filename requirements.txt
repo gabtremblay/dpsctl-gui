@@ -16,5 +16,6 @@ pywinstyles==1.8
 scikit-build==0.18.1
 six==1.16.0
 sv-ttk==2.6.0
-tkextrafont==0.6.3
+tkextrafont==0.6.3; sys_platform == 'win32'
+tkextrafont @ git+https://github.com/TkinterEP/python-tkextrafont.git@bbbfb0a246fb16de0d7c224f1c592af6cbfc072d; sys_platform == 'linux'
 tomli==2.0.1
