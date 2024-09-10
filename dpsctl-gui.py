@@ -46,9 +46,6 @@ from tkinter import messagebox
 from tkinter.ttk import *
 from tkextrafont import Font
 
-# Some Windows hacks
-import pywinstyles
-
 # General imports
 import io
 import sys
