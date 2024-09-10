@@ -15,6 +15,5 @@ python-dateutil==2.9.0.post0
 scikit-build==0.18.1
 six==1.16.0
 sv-ttk==2.6.0
-tkextrafont==0.6.3; sys_platform == 'win32'
-tkextrafont @ git+https://github.com/TkinterEP/python-tkextrafont.git@bbbfb0a246fb16de0d7c224f1c592af6cbfc072d; sys_platform == 'linux'
+tkextrafont==0.6.1
 tomli==2.0.1

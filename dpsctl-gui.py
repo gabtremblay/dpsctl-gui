@@ -305,10 +305,10 @@ running_label = Label(options_frame, text="Stopped", style='stopped.TLabel')
 running_label.grid(row=4, pady=5, sticky='s')
 
 voltage_label = Label(status_frame, text="0.00V", font=vi_font, style='statuslbl.TLabel')
-voltage_label.grid(row=0, column=0, columnspan=2, padx=5, sticky='ne')
+voltage_label.grid(row=0, column=0, columnspan=2, padx=5, sticky='se')
 
 current_label = Label(status_frame, text="0.000A", font=vi_font, style='statuslbl.TLabel')
-current_label.grid(row=1, column=0, columnspan=2, padx=5, sticky='ne')
+current_label.grid(row=1, column=0, columnspan=2, padx=5, sticky='se')
 
 mode_label =  Label(status_frame, text="CV", font=mode_font, style='statuslbl.TLabel')
 mode_label.grid(row=2, column=0, padx=5, sticky='sw')
